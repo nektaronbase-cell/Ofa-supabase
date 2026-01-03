@@ -179,9 +179,46 @@ export default function HomeScreen() {
             </View>
           )}
 
+          {/* Authentication Buttons */}
+          {!user && (
+            <View className="gap-2">
+              <Pressable
+                onPress={() => router.push('/sign-in' as any)}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <View className="bg-primary rounded-lg py-4 items-center">
+                  <Text className="text-background font-bold text-base">
+                    Sign In
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/sign-up' as any)}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <View className="bg-surface border border-border rounded-lg py-4 items-center">
+                  <Text className="text-foreground font-semibold text-base">
+                    Create Account
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+          )}
+
           {/* Action Buttons */}
-          <View className="gap-2">
-            {user && (
+          {user && (
+            <View className="gap-2">
               <Pressable
                 onPress={() => router.push('/admin-seed')}
                 style={({ pressed }) => [
@@ -197,25 +234,24 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               </Pressable>
-            )}
 
-            <Pressable
-              onPress={handleCreateFighter}
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.9 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                },
-              ]}
-            >
-              <View className="bg-primary rounded-lg py-3 px-4 items-center">
-                <Text className="text-background font-bold text-base">
-                  ➕ Create Fighter
-                </Text>
-              </View>
-            </Pressable>
+              <Pressable
+                onPress={handleCreateFighter}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <View className="bg-primary rounded-lg py-3 px-4 items-center">
+                  <Text className="text-background font-bold text-base">
+                    ➕ Create Fighter
+                  </Text>
+                </View>
+              </Pressable>
 
-            <View className="flex-row gap-2">
+              <View className="flex-row gap-2">
               <Pressable
                 onPress={handleViewChallenges}
                 style={({ pressed }) => [
@@ -249,8 +285,9 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               </Pressable>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Fighters List */}
           <View>

@@ -134,3 +134,16 @@
 - [x] Implement form validation before fighter creation
 - [x] Connect to Supabase to save fighter
 - [x] Test complete fighter creation flow
+
+
+## Authentication UI Enhancement
+- [x] Create dedicated sign-in screen with email/password form
+- [x] Create sign-up screen with account creation flow
+- [x] Add forgot password screen and functionality
+- [x] Add form validation for email and password
+- [x] Add loading states during authentication
+- [x] Add error handling and user feedback
+- [x] Implement session persistence
+- [ ] Add logout functionality
+- [ ] Create welcome/onboarding screen for new users
+- [x] Test complete authentication flow
