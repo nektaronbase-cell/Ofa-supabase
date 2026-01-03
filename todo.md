@@ -147,3 +147,12 @@
 - [ ] Add logout functionality
 - [ ] Create welcome/onboarding screen for new users
 - [x] Test complete authentication flow
+
+
+## Settings Screen
+- [x] Create settings screen with user profile section
+- [x] Display current user email
+- [x] Add logout button with confirmation dialog
+- [x] Add settings tab to navigation
+- [x] Handle logout and redirect to sign-in
+- [x] Test logout functionality
