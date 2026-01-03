@@ -96,3 +96,10 @@
 - [ ] Test real-time updates with Supabase
 - [ ] Set up database tables in Supabase (if not already done)
 - [ ] Configure row-level security policies
+
+
+## UI Fixes
+- [x] Fix screen spacing - top content is cut off
+- [x] Improve loading indicators visibility and design
+- [x] Verify SafeArea implementation on all screens
+- [x] Test spacing on web preview

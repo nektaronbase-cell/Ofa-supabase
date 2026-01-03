@@ -130,8 +130,12 @@ export default function RankingsScreen() {
   );
 
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <ScreenContainer>
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View className="gap-4">
           {/* Header */}
           <View className="gap-2">
@@ -165,8 +169,9 @@ export default function RankingsScreen() {
               {WEIGHT_CLASSES.find((wc) => wc.id === selectedWeightClass)?.name} Division
             </Text>
             {loading ? (
-              <View className="items-center py-8">
+              <View className="items-center py-12">
                 <ActivityIndicator size="large" color={colors.primary} />
+                <Text className="text-muted mt-4">Loading rankings...</Text>
               </View>
             ) : displayRankings.length > 0 ? (
               <FlatList

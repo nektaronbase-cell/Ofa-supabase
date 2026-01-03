@@ -116,9 +116,24 @@ export default function HomeScreen() {
     </Pressable>
   );
 
+  if (loading) {
+    return (
+      <ScreenContainer>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text className="text-muted mt-4">Loading fighters...</Text>
+        </View>
+      </ScreenContainer>
+    );
+  }
+
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <ScreenContainer>
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View className="gap-6">
           {/* Header */}
           <View className="gap-2">
@@ -136,7 +151,7 @@ export default function HomeScreen() {
           )}
 
           {/* Quick Stats */}
-          {!loading && displayFighters.length > 0 && (
+          {displayFighters.length > 0 && (
             <View className="bg-surface rounded-lg p-4 border border-border gap-2">
               <Text className="text-sm font-semibold text-muted uppercase">
                 Your Stats
@@ -224,11 +239,7 @@ export default function HomeScreen() {
             <Text className="text-lg font-bold text-foreground mb-3">
               Your Fighters
             </Text>
-            {loading ? (
-              <View className="items-center py-8">
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            ) : displayFighters.length > 0 ? (
+            {displayFighters.length > 0 ? (
               <FlatList
                 data={displayFighters}
                 renderItem={renderFighterCard}

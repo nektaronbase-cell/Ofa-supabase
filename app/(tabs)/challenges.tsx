@@ -57,6 +57,7 @@ export default function ChallengesScreen() {
   const [displayChallenges, setDisplayChallenges] = useState(mockChallenges);
   const [displayHistory] = useState(mockHistory);
   const [activeTab, setActiveTab] = useState<"incoming" | "history">("incoming");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Use Supabase data if available, otherwise use mock data
   useEffect(() => {
@@ -74,6 +75,7 @@ export default function ChallengesScreen() {
     }
 
     try {
+      setActionLoading(challengeId);
       const { error: err } = await updateChallenge(challengeId, "done");
       if (err) {
         Alert.alert("Error", err.message);
@@ -83,6 +85,8 @@ export default function ChallengesScreen() {
       }
     } catch (err) {
       Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -93,6 +97,7 @@ export default function ChallengesScreen() {
     }
 
     try {
+      setActionLoading(challengeId);
       const { error: err } = await updateChallenge(challengeId, "declined");
       if (err) {
         Alert.alert("Error", err.message);
@@ -102,53 +107,66 @@ export default function ChallengesScreen() {
       }
     } catch (err) {
       Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const renderChallengeCard = ({ item }: any) => (
-    <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
-      <View className="mb-3">
-        <Text className="text-lg font-bold text-foreground mb-1">
-          ⚔️ {item.challenger_name}
-        </Text>
-        <Text className="text-sm text-muted">
-          {item.weight_class} • {new Date(item.created_at).toLocaleDateString()}
-        </Text>
-      </View>
+  const renderChallengeCard = ({ item }: any) => {
+    const isProcessing = actionLoading === item.id;
 
-      <View className="flex-row gap-2">
-        <Pressable
-          onPress={() => handleAcceptChallenge(item.id)}
-          style={({ pressed }) => [
-            { flex: 1 },
-            {
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
-        >
-          <View className="bg-success rounded-lg py-2 px-3 items-center">
-            <Text className="text-background font-semibold text-sm">Accept</Text>
-          </View>
-        </Pressable>
+    return (
+      <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
+        <View className="mb-3">
+          <Text className="text-lg font-bold text-foreground mb-1">
+            ⚔️ {item.challenger_name}
+          </Text>
+          <Text className="text-sm text-muted">
+            {item.weight_class} • {new Date(item.created_at).toLocaleDateString()}
+          </Text>
+        </View>
 
-        <Pressable
-          onPress={() => handleDeclineChallenge(item.id)}
-          style={({ pressed }) => [
-            { flex: 1 },
-            {
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
-        >
-          <View className="bg-error rounded-lg py-2 px-3 items-center">
-            <Text className="text-background font-semibold text-sm">Decline</Text>
+        {isProcessing ? (
+          <View className="flex-row items-center justify-center py-2">
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text className="text-muted ml-2">Processing...</Text>
           </View>
-        </Pressable>
+        ) : (
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => handleAcceptChallenge(item.id)}
+              style={({ pressed }) => [
+                { flex: 1 },
+                {
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+            >
+              <View className="bg-success rounded-lg py-2 px-3 items-center">
+                <Text className="text-background font-semibold text-sm">Accept</Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleDeclineChallenge(item.id)}
+              style={({ pressed }) => [
+                { flex: 1 },
+                {
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+            >
+              <View className="bg-error rounded-lg py-2 px-3 items-center">
+                <Text className="text-background font-semibold text-sm">Decline</Text>
+              </View>
+            </Pressable>
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderHistoryCard = ({ item }: any) => (
     <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
@@ -184,8 +202,12 @@ export default function ChallengesScreen() {
   );
 
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <ScreenContainer>
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View className="gap-4">
           {/* Header */}
           <View className="gap-2">
@@ -259,8 +281,9 @@ export default function ChallengesScreen() {
           {activeTab === "incoming" ? (
             <View>
               {loading ? (
-                <View className="items-center py-8">
+                <View className="items-center py-12">
                   <ActivityIndicator size="large" color={colors.primary} />
+                  <Text className="text-muted mt-4">Loading challenges...</Text>
                 </View>
               ) : displayChallenges.length > 0 ? (
                 <FlatList
