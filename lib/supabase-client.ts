@@ -3,11 +3,32 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase environment variables");
-}
+// Create a mock Supabase client for development/testing
+const createMockClient = () => ({
+  from: () => ({
+    select: () => ({
+      eq: () => ({
+        single: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+      }),
+    }),
+    insert: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+    update: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+    delete: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+    order: () => ({ limit: () => ({ data: [], error: null }) }),
+  }),
+  auth: {
+    signUp: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+    signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+    signOut: async () => ({ data: null, error: null }),
+    getSession: async () => ({ data: { session: null }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+  },
+  channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
+});
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = supabaseUrl && supabaseKey 
+  ? createClient(supabaseUrl, supabaseKey)
+  : (createMockClient() as any);
 
 // Fighter type
 export interface Fighter {
