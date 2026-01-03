@@ -59,7 +59,7 @@ export default function HomeScreen() {
       Alert.alert("Sign In Required", "Please sign in to create a fighter");
       return;
     }
-    alert("Create Fighter feature coming soon!");
+    router.push("/create-fighter");
   };
 
   const handleViewFighter = (fighterId: string) => {
@@ -67,7 +67,7 @@ export default function HomeScreen() {
       Alert.alert("Sign In Required", "Please sign in to view fighter details");
       return;
     }
-    alert(`View Fighter ${fighterId} - Feature coming soon!`);
+    router.push(`/training?id=${fighterId}`);
   };
 
   const handleViewChallenges = () => {

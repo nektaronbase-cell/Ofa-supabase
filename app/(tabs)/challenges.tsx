@@ -5,7 +5,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useChallenges } from "@/hooks/use-challenges";
 import { useAuthState } from "@/hooks/use-auth-state";
-import { updateChallenge } from "@/lib/supabase-client";
+import { updateChallenge, getFighterById, updateFighter } from "@/lib/supabase-client";
+import { simFight } from "@/lib/game-utils";
 
 // Mock challenges data
 const mockChallenges = [
@@ -13,6 +14,8 @@ const mockChallenges = [
     id: "ch1",
     challenger_name: "John Smith",
     defender_name: "You",
+    challenger_fighter_id: "mock1",
+    defender_fighter_id: "mock2",
     weight_class: "welterweight",
     status: "pending",
     created_at: "2026-01-03T15:30:00Z",
@@ -21,6 +24,8 @@ const mockChallenges = [
     id: "ch2",
     challenger_name: "Maria Garcia",
     defender_name: "You",
+    challenger_fighter_id: "mock3",
+    defender_fighter_id: "mock4",
     weight_class: "middleweight",
     status: "pending",
     created_at: "2026-01-03T14:15:00Z",
@@ -74,15 +79,52 @@ export default function ChallengesScreen() {
       return;
     }
 
+    const challenge = displayChallenges.find(c => c.id === challengeId);
+    if (!challenge) return;
+
     try {
       setActionLoading(challengeId);
-      const { error: err } = await updateChallenge(challengeId, "done");
-      if (err) {
-        Alert.alert("Error", err.message);
-      } else {
-        Alert.alert("Success", "Challenge accepted! Fight simulation coming soon.");
-        refetch();
+      
+      // Get both fighters
+      const { data: f1 } = await getFighterById(challenge.challenger_fighter_id);
+      const { data: f2 } = await getFighterById(challenge.defender_fighter_id);
+      
+      if (!f1 || !f2) {
+        Alert.alert("Error", "Could not load fighter data");
+        return;
       }
+
+      // Simulate fight
+      const result = simFight(f1, f2);
+      const won = result.winner.id === f2.id;
+      
+      // Update winner
+      await updateFighter(result.winner.id, {
+        wins: result.winner.wins + 1,
+        ko_wins: result.method === 'KO' ? result.winner.ko_wins + 1 : result.winner.ko_wins,
+        sub_wins: result.method === 'Submission' ? result.winner.sub_wins + 1 : result.winner.sub_wins,
+        dec_wins: result.method === 'Decision' ? result.winner.dec_wins + 1 : result.winner.dec_wins,
+        money: result.winner.money + 50000,
+        training_points: result.winner.training_points + 4
+      });
+      
+      // Update loser
+      await updateFighter(result.loser.id, {
+        losses: result.loser.losses + 1,
+        money: result.loser.money + 15000,
+        training_points: result.loser.training_points + 2
+      });
+      
+      // Update challenge status
+      await updateChallenge(challengeId, "done");
+      
+      // Show result
+      const purse = won ? 50000 : 15000;
+      Alert.alert(
+        won ? "🏆 VICTORY!" : "💔 DEFEAT",
+        `${result.winner.first_name} ${result.winner.last_name} def. ${result.loser.first_name} ${result.loser.last_name}\n\n${result.method} • R${result.round} • ${result.time}\n\nPurse: $${purse.toLocaleString()}`,
+        [{ text: "OK", onPress: () => refetch() }]
+      );
     } catch (err) {
       Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
     } finally {

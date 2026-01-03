@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable, FlatList, ActivityIndicator } from "react-native";
+import { ScrollView, Text, View, Pressable, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useState, useEffect } from "react";
 import { Picker } from "@react-native-picker/picker";
 
@@ -6,6 +6,9 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useRankings } from "@/hooks/use-rankings";
 import { useAuthState } from "@/hooks/use-auth-state";
+import { useFighters } from "@/hooks/use-fighters";
+import { createChallenge } from "@/lib/supabase-client";
+import { genId } from "@/lib/game-utils";
 
 const WEIGHT_CLASSES = [
   { id: "flyweight", name: "Flyweight" },
@@ -70,9 +73,45 @@ const mockRankings: any[] = [
 export default function RankingsScreen() {
   const colors = useColors();
   const { user } = useAuthState();
+  const { fighters } = useFighters();
   const [selectedWeightClass, setSelectedWeightClass] = useState("welterweight");
   const { rankings: supabaseRankings, loading, error } = useRankings(selectedWeightClass);
   const [displayRankings, setDisplayRankings] = useState(mockRankings);
+  const [challenging, setChallenging] = useState<string | null>(null);
+
+  const selectedFighter = fighters && fighters.length > 0 ? fighters[0] : null;
+
+  const handleChallenge = async (opponent: any) => {
+    if (!user || !selectedFighter) {
+      Alert.alert("Error", "You need a fighter to send a challenge");
+      return;
+    }
+
+    try {
+      setChallenging(opponent.id);
+      const { error } = await createChallenge({
+        id: genId(),
+        challenger_id: user.id,
+        challenger_fighter_id: selectedFighter.id,
+        challenger_name: `${selectedFighter.first_name} ${selectedFighter.last_name}`,
+        defender_id: opponent.owner_id,
+        defender_fighter_id: opponent.id,
+        defender_name: `${opponent.first_name} ${opponent.last_name}`,
+        weight_class: selectedFighter.weight_class,
+        status: 'pending'
+      });
+
+      if (error) {
+        Alert.alert("Error", error.message);
+      } else {
+        Alert.alert("Success", "Challenge sent!");
+      }
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setChallenging(null);
+    }
+  };
 
   // Use Supabase data if available, otherwise use mock data
   useEffect(() => {
@@ -113,18 +152,26 @@ export default function RankingsScreen() {
         </View>
 
         {/* Challenge Button */}
-        <Pressable
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
-        >
-          <View className="bg-primary rounded px-3 py-2">
-            <Text className="text-background font-semibold text-sm">Challenge</Text>
-          </View>
-        </Pressable>
+        {item.owner_id !== user?.id && selectedFighter && item.weight_class === selectedFighter.weight_class && (
+          <Pressable
+            onPress={() => handleChallenge(item)}
+            disabled={challenging === item.id}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            <View className={`rounded px-3 py-2 ${challenging === item.id ? 'bg-border' : 'bg-primary'}`}>
+              {challenging === item.id ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Text className="text-background font-semibold text-sm">Challenge</Text>
+              )}
+            </View>
+          </Pressable>
+        )}
       </View>
     </Pressable>
   );
