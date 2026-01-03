@@ -113,3 +113,11 @@
 - [x] Implement challenge system with fight execution
 - [x] Add all game mechanics and features from original code
 - [x] Test complete game flow end-to-end
+
+
+## Database Population
+- [x] Research top 15 real MMA fighters for each weight class
+- [x] Create seed script with authentic fighter data
+- [x] Add admin screen for in-app database seeding
+- [ ] Execute seed script to populate database
+- [ ] Verify all fighters are accessible in game

@@ -181,6 +181,24 @@ export default function HomeScreen() {
 
           {/* Action Buttons */}
           <View className="gap-2">
+            {user && (
+              <Pressable
+                onPress={() => router.push('/admin-seed')}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
+              >
+                <View className="bg-border rounded-lg py-2 px-4 items-center">
+                  <Text className="text-foreground font-semibold text-xs">
+                    🔧 Admin: Seed Database
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+
             <Pressable
               onPress={handleCreateFighter}
               style={({ pressed }) => [
