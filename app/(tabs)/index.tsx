@@ -1,9 +1,11 @@
-import { ScrollView, Text, View, Pressable, FlatList, Alert } from "react-native";
+import { ScrollView, Text, View, Pressable, FlatList, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { useFighters } from "@/hooks/use-fighters";
+import { useAuthState } from "@/hooks/use-auth-state";
 
 // Mock data for development
 const mockFighters = [
@@ -38,25 +40,41 @@ const mockFighters = [
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const [fighters] = useState(mockFighters);
+  const { user } = useAuthState();
+  const { fighters: supabaseFighters, loading, error } = useFighters();
+  const [displayFighters, setDisplayFighters] = useState(mockFighters);
+
+  // Use Supabase data if available, otherwise use mock data
+  useEffect(() => {
+    if (supabaseFighters && supabaseFighters.length > 0) {
+      setDisplayFighters(supabaseFighters as any);
+    } else if (!loading && !user) {
+      // Show mock data when not logged in
+      setDisplayFighters(mockFighters);
+    }
+  }, [supabaseFighters, loading, user]);
 
   const handleCreateFighter = () => {
-    // Navigate to create fighter screen
+    if (!user) {
+      Alert.alert("Sign In Required", "Please sign in to create a fighter");
+      return;
+    }
     alert("Create Fighter feature coming soon!");
   };
 
   const handleViewFighter = (fighterId: string) => {
-    // Navigate to fighter detail screen
+    if (!user) {
+      Alert.alert("Sign In Required", "Please sign in to view fighter details");
+      return;
+    }
     alert(`View Fighter ${fighterId} - Feature coming soon!`);
   };
 
   const handleViewChallenges = () => {
-    // Switch to challenges tab
     router.push("../challenges");
   };
 
   const handleViewRankings = () => {
-    // Switch to rankings tab
     router.push("../rankings");
   };
 
@@ -69,27 +87,29 @@ export default function HomeScreen() {
         <View className="flex-row justify-between items-start mb-2">
           <View className="flex-1">
             <Text className="text-lg font-bold text-foreground">
-              {item.style_icon} {item.first_name} {item.last_name}
+              {item.style_icon || "🥊"} {item.first_name} {item.last_name}
             </Text>
             {item.nickname && (
-              <Text className="text-sm text-muted italic">\"{ item.nickname }\"</Text>
+              <Text className="text-sm text-muted italic">"{item.nickname}"</Text>
             )}
           </View>
           <Text className="text-xs bg-primary px-2 py-1 rounded text-background font-semibold">
             {item.weight_class}
           </Text>
         </View>
+
         <View className="flex-row justify-between mb-2">
           <Text className="text-sm text-muted">
-            Record: {item.wins}W - {item.losses}L - {item.draws}D
+            Record: {item.wins}W - {item.losses}L - {item.draws || 0}D
           </Text>
         </View>
+
         <View className="flex-row justify-between">
           <Text className="text-xs text-success font-semibold">
-            💰 ${item.money.toLocaleString()}
+            💰 ${item.money?.toLocaleString() || "0"}
           </Text>
           <Text className="text-xs text-warning font-semibold">
-            ⚡ {item.training_points} pts
+            ⚡ {item.training_points || 0} pts
           </Text>
         </View>
       </View>
@@ -104,42 +124,56 @@ export default function HomeScreen() {
           <View className="gap-2">
             <Text className="text-3xl font-bold text-foreground">OFA</Text>
             <Text className="text-sm text-muted">
-              Onchain Fighting Association
+              {user ? `Welcome, ${user.email}` : "Onchain Fighting Association"}
             </Text>
           </View>
 
+          {/* Error Message */}
+          {error && (
+            <View className="bg-error/10 rounded-lg p-3 border border-error">
+              <Text className="text-error text-sm">{error}</Text>
+            </View>
+          )}
+
           {/* Quick Stats */}
-          <View className="bg-surface rounded-lg p-4 border border-border gap-2">
-            <Text className="text-sm font-semibold text-muted uppercase">
-              Your Stats
-            </Text>
-            <View className="flex-row justify-between">
-              <View>
-                <Text className="text-2xl font-bold text-primary">
-                  {fighters.reduce((sum, f) => sum + f.wins, 0)}
-                </Text>
-                <Text className="text-xs text-muted">Total Wins</Text>
-              </View>
-              <View>
-                <Text className="text-2xl font-bold text-error">
-                  {fighters.reduce((sum, f) => sum + f.losses, 0)}
-                </Text>
-                <Text className="text-xs text-muted">Total Losses</Text>
-              </View>
-              <View>
-                <Text className="text-2xl font-bold text-success">
-                  ${(fighters.reduce((sum, f) => sum + f.money, 0) / 1000).toFixed(0)}k
-                </Text>
-                <Text className="text-xs text-muted">Total Money</Text>
+          {!loading && displayFighters.length > 0 && (
+            <View className="bg-surface rounded-lg p-4 border border-border gap-2">
+              <Text className="text-sm font-semibold text-muted uppercase">
+                Your Stats
+              </Text>
+              <View className="flex-row justify-between">
+                <View>
+                  <Text className="text-2xl font-bold text-primary">
+                    {displayFighters.reduce((sum, f: any) => sum + (f.wins || 0), 0)}
+                  </Text>
+                  <Text className="text-xs text-muted">Total Wins</Text>
+                </View>
+                <View>
+                  <Text className="text-2xl font-bold text-error">
+                    {displayFighters.reduce((sum, f: any) => sum + (f.losses || 0), 0)}
+                  </Text>
+                  <Text className="text-xs text-muted">Total Losses</Text>
+                </View>
+                <View>
+                  <Text className="text-2xl font-bold text-success">
+                    ${(displayFighters.reduce((sum, f: any) => sum + (f.money || 0), 0) / 1000).toFixed(0)}k
+                  </Text>
+                  <Text className="text-xs text-muted">Total Money</Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
           {/* Action Buttons */}
           <View className="gap-2">
             <Pressable
               onPress={handleCreateFighter}
-              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
             >
               <View className="bg-primary rounded-lg py-3 px-4 items-center">
                 <Text className="text-background font-bold text-base">
@@ -151,7 +185,13 @@ export default function HomeScreen() {
             <View className="flex-row gap-2">
               <Pressable
                 onPress={handleViewChallenges}
-                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                style={({ pressed }) => [
+                  { flex: 1 },
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
               >
                 <View className="bg-surface rounded-lg py-3 px-4 items-center border border-border">
                   <Text className="text-foreground font-semibold text-sm">
@@ -162,7 +202,13 @@ export default function HomeScreen() {
 
               <Pressable
                 onPress={handleViewRankings}
-                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                style={({ pressed }) => [
+                  { flex: 1 },
+                  {
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                  },
+                ]}
               >
                 <View className="bg-surface rounded-lg py-3 px-4 items-center border border-border">
                   <Text className="text-foreground font-semibold text-sm">
@@ -178,9 +224,13 @@ export default function HomeScreen() {
             <Text className="text-lg font-bold text-foreground mb-3">
               Your Fighters
             </Text>
-            {fighters.length > 0 ? (
+            {loading ? (
+              <View className="items-center py-8">
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : displayFighters.length > 0 ? (
               <FlatList
-                data={fighters}
+                data={displayFighters}
                 renderItem={renderFighterCard}
                 keyExtractor={(item) => item.id}
                 scrollEnabled={false}
@@ -188,7 +238,9 @@ export default function HomeScreen() {
             ) : (
               <View className="bg-surface rounded-lg p-6 items-center border border-border">
                 <Text className="text-muted text-center">
-                  No fighters yet. Create your first fighter to get started!
+                  {user
+                    ? "No fighters yet. Create your first fighter to get started!"
+                    : "Sign in to manage your fighters"}
                 </Text>
               </View>
             )}

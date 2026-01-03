@@ -1,8 +1,11 @@
-import { ScrollView, Text, View, Pressable, FlatList } from "react-native";
-import { useState } from "react";
+import { ScrollView, Text, View, Pressable, FlatList, ActivityIndicator, Alert } from "react-native";
+import { useState, useEffect } from "react";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { useChallenges } from "@/hooks/use-challenges";
+import { useAuthState } from "@/hooks/use-auth-state";
+import { updateChallenge } from "@/lib/supabase-client";
 
 // Mock challenges data
 const mockChallenges = [
@@ -49,9 +52,58 @@ const mockHistory = [
 
 export default function ChallengesScreen() {
   const colors = useColors();
-  const [challenges] = useState(mockChallenges);
-  const [history] = useState(mockHistory);
+  const { user } = useAuthState();
+  const { challenges: supabaseChallenges, loading, error, refetch } = useChallenges();
+  const [displayChallenges, setDisplayChallenges] = useState(mockChallenges);
+  const [displayHistory] = useState(mockHistory);
   const [activeTab, setActiveTab] = useState<"incoming" | "history">("incoming");
+
+  // Use Supabase data if available, otherwise use mock data
+  useEffect(() => {
+    if (supabaseChallenges && supabaseChallenges.length > 0) {
+      setDisplayChallenges(supabaseChallenges as any);
+    } else {
+      setDisplayChallenges(mockChallenges);
+    }
+  }, [supabaseChallenges]);
+
+  const handleAcceptChallenge = async (challengeId: string) => {
+    if (!user) {
+      Alert.alert("Sign In Required", "Please sign in to accept challenges");
+      return;
+    }
+
+    try {
+      const { error: err } = await updateChallenge(challengeId, "done");
+      if (err) {
+        Alert.alert("Error", err.message);
+      } else {
+        Alert.alert("Success", "Challenge accepted! Fight simulation coming soon.");
+        refetch();
+      }
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
+    }
+  };
+
+  const handleDeclineChallenge = async (challengeId: string) => {
+    if (!user) {
+      Alert.alert("Sign In Required", "Please sign in to decline challenges");
+      return;
+    }
+
+    try {
+      const { error: err } = await updateChallenge(challengeId, "declined");
+      if (err) {
+        Alert.alert("Error", err.message);
+      } else {
+        Alert.alert("Success", "Challenge declined");
+        refetch();
+      }
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
+    }
+  };
 
   const renderChallengeCard = ({ item }: any) => (
     <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
@@ -66,6 +118,7 @@ export default function ChallengesScreen() {
 
       <View className="flex-row gap-2">
         <Pressable
+          onPress={() => handleAcceptChallenge(item.id)}
           style={({ pressed }) => [
             { flex: 1 },
             {
@@ -80,6 +133,7 @@ export default function ChallengesScreen() {
         </Pressable>
 
         <Pressable
+          onPress={() => handleDeclineChallenge(item.id)}
           style={({ pressed }) => [
             { flex: 1 },
             {
@@ -139,6 +193,13 @@ export default function ChallengesScreen() {
             <Text className="text-sm text-muted">Manage your fights and history</Text>
           </View>
 
+          {/* Error Message */}
+          {error && (
+            <View className="bg-error/10 rounded-lg p-3 border border-error">
+              <Text className="text-error text-sm">{error}</Text>
+            </View>
+          )}
+
           {/* Tab Selector */}
           <View className="flex-row gap-2">
             <Pressable
@@ -162,7 +223,7 @@ export default function ChallengesScreen() {
                     activeTab === "incoming" ? "text-background" : "text-foreground"
                   }`}
                 >
-                  Incoming ({challenges.length})
+                  Incoming ({displayChallenges.length})
                 </Text>
               </View>
             </Pressable>
@@ -188,7 +249,7 @@ export default function ChallengesScreen() {
                     activeTab === "history" ? "text-background" : "text-foreground"
                   }`}
                 >
-                  History ({history.length})
+                  History ({displayHistory.length})
                 </Text>
               </View>
             </Pressable>
@@ -197,9 +258,13 @@ export default function ChallengesScreen() {
           {/* Content */}
           {activeTab === "incoming" ? (
             <View>
-              {challenges.length > 0 ? (
+              {loading ? (
+                <View className="items-center py-8">
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              ) : displayChallenges.length > 0 ? (
                 <FlatList
-                  data={challenges}
+                  data={displayChallenges}
                   renderItem={renderChallengeCard}
                   keyExtractor={(item) => item.id}
                   scrollEnabled={false}
@@ -214,9 +279,9 @@ export default function ChallengesScreen() {
             </View>
           ) : (
             <View>
-              {history.length > 0 ? (
+              {displayHistory.length > 0 ? (
                 <FlatList
-                  data={history}
+                  data={displayHistory}
                   renderItem={renderHistoryCard}
                   keyExtractor={(item) => item.id}
                   scrollEnabled={false}

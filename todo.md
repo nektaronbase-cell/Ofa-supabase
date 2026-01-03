@@ -83,3 +83,16 @@
 - [x] Rankings screen with weight class filtering
 - [x] Challenges screen with incoming/history tabs
 - [x] Tab navigation setup
+
+
+## Supabase Integration Tasks
+- [ ] Create useAuth hook for authentication state management
+- [ ] Create useFighters hook for fighter data fetching and real-time updates
+- [ ] Create useChallenges hook for challenge management
+- [ ] Update Home screen to use Supabase fighter data
+- [ ] Update Rankings screen to use Supabase rankings
+- [ ] Update Challenges screen to use Supabase challenges
+- [ ] Add loading states and error handling
+- [ ] Test real-time updates with Supabase
+- [ ] Set up database tables in Supabase (if not already done)
+- [ ] Configure row-level security policies
