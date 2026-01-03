@@ -2,15 +2,30 @@ import { ScrollView, Text, View, TextInput, Pressable, Alert } from "react-nativ
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
+import Slider from "@react-native-community/slider";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
 import { useAuthState } from "@/hooks/use-auth-state";
-import { createFighter } from "@/lib/supabase-client";
-import { WEIGHT_CLASSES, STYLES, STANCES, ATTRIBUTE_CATEGORIES, makeFighter, clamp } from "@/lib/game-utils";
+import { supabase } from "@/lib/supabase-client";
+import { WEIGHT_CLASSES, STYLES, STANCES, makeFighter } from "@/lib/game-utils";
+
+const ATTRIBUTES = [
+  { key: 'Striking', label: 'Striking', icon: '🥊' },
+  { key: 'Grappling', label: 'Grappling', icon: '🤼' },
+  { key: 'Stamina', label: 'Stamina', icon: '💪' },
+  { key: 'Chin', label: 'Chin', icon: '🛡️' },
+  { key: 'Power', label: 'Power', icon: '💥' },
+];
+
+const MAX_POINTS = 90;
+const MAX_PER_ATTRIBUTE = 30;
 
 export default function CreateFighterScreen() {
   const router = useRouter();
+  const colors = useColors();
   const { user } = useAuthState();
+  
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -24,38 +39,77 @@ export default function CreateFighterScreen() {
     weightClass: 'welterweight',
     points: {} as Record<string, number>,
   });
-  const [pts, setPts] = useState(90);
+  
   const [loading, setLoading] = useState(false);
 
-  const handlePt = (attr: string, value: number) => {
+  // Calculate remaining points
+  const usedPoints = Object.values(form.points).reduce((sum, val) => sum + (val || 0), 0);
+  const remainingPoints = MAX_POINTS - usedPoints;
+
+  const handleSliderChange = (attr: string, value: number) => {
+    const roundedValue = Math.round(value);
     const current = form.points[attr] || 0;
-    const diff = value - current;
+    const diff = roundedValue - current;
     
-    if (pts - diff >= 0 && value >= 0 && value <= 15) {
+    // Check if we have enough points
+    if (remainingPoints - diff >= 0 && roundedValue >= 0 && roundedValue <= MAX_PER_ATTRIBUTE) {
       setForm({
         ...form,
-        points: { ...form.points, [attr]: value }
+        points: { ...form.points, [attr]: roundedValue }
       });
-      setPts(pts - diff);
+    }
+  };
+
+  const handleIncrement = (attr: string) => {
+    const current = form.points[attr] || 0;
+    if (remainingPoints > 0 && current < MAX_PER_ATTRIBUTE) {
+      setForm({
+        ...form,
+        points: { ...form.points, [attr]: current + 1 }
+      });
+    }
+  };
+
+  const handleDecrement = (attr: string) => {
+    const current = form.points[attr] || 0;
+    if (current > 0) {
+      setForm({
+        ...form,
+        points: { ...form.points, [attr]: current - 1 }
+      });
     }
   };
 
   const create = async () => {
-    if (!form.firstName || !form.lastName || !user) {
+    if (!form.firstName || !form.lastName) {
       Alert.alert("Error", "Please fill in first and last name");
+      return;
+    }
+
+    if (!user) {
+      Alert.alert("Error", "You must be signed in to create a fighter");
+      return;
+    }
+
+    if (usedPoints !== MAX_POINTS) {
+      Alert.alert("Error", `Please allocate all ${MAX_POINTS} attribute points`);
       return;
     }
 
     try {
       setLoading(true);
       const fighter = makeFighter(form, user.id);
-      const { error } = await createFighter(fighter);
+      
+      const { error } = await supabase
+        .from('fighters')
+        .insert(fighter);
       
       if (error) {
         Alert.alert("Error", error.message);
       } else {
-        Alert.alert("Success", "Fighter created successfully!");
-        router.back();
+        Alert.alert("Success", "Fighter created successfully!", [
+          { text: "OK", onPress: () => router.back() }
+        ]);
       }
     } catch (err) {
       Alert.alert("Error", err instanceof Error ? err.message : "Unknown error");
@@ -173,52 +227,108 @@ export default function CreateFighterScreen() {
             </View>
           </View>
 
-          {/* Attributes */}
-          <View className="bg-surface rounded-lg p-4 border border-border gap-3">
+          {/* Attributes with Sliders */}
+          <View className="bg-surface rounded-lg p-4 border border-border gap-4">
             <View className="flex-row justify-between items-center">
               <Text className="text-sm font-semibold text-muted uppercase">Attributes</Text>
-              <Text className={`text-lg font-bold ${pts === 0 ? 'text-success' : 'text-warning'}`}>
-                {pts}/90 pts
-              </Text>
+              <View className="bg-background px-3 py-2 rounded border border-border">
+                <Text className={`text-lg font-bold ${
+                  remainingPoints === 0 ? 'text-success' : 
+                  remainingPoints < 10 ? 'text-warning' : 
+                  'text-foreground'
+                }`}>
+                  {remainingPoints}/{MAX_POINTS} pts
+                </Text>
+              </View>
             </View>
 
-            {Object.entries(ATTRIBUTE_CATEGORIES).map(([category, attrs]) => (
-              <View key={category} className="gap-2">
-                <Text className="text-xs text-muted">{category}</Text>
-                {attrs.map((attr) => (
-                  <View key={attr} className="flex-row items-center justify-between bg-background p-2 rounded">
-                    <Text className="text-sm text-foreground flex-1">{attr}</Text>
-                    <View className="flex-row items-center gap-2">
-                      <Pressable
-                        onPress={() => handlePt(attr, (form.points[attr] || 0) - 1)}
-                        style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-                      >
-                        <View className="w-8 h-8 bg-border rounded items-center justify-center">
-                          <Text className="text-foreground font-bold">−</Text>
-                        </View>
-                      </Pressable>
-                      <Text className="text-foreground font-bold w-8 text-center">
-                        {form.points[attr] || 0}
-                      </Text>
-                      <Pressable
-                        onPress={() => handlePt(attr, (form.points[attr] || 0) + 1)}
-                        style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-                      >
-                        <View className="w-8 h-8 bg-border rounded items-center justify-center">
-                          <Text className="text-foreground font-bold">+</Text>
-                        </View>
-                      </Pressable>
-                    </View>
-                  </View>
-                ))}
+            {remainingPoints > 0 && (
+              <View className="bg-warning/10 border border-warning rounded p-3">
+                <Text className="text-warning text-xs font-semibold">
+                  ⚠️ Allocate all {remainingPoints} remaining points before creating
+                </Text>
               </View>
-            ))}
+            )}
+
+            {ATTRIBUTES.map((attr) => {
+              const value = form.points[attr.key] || 0;
+              const percentage = (value / MAX_PER_ATTRIBUTE) * 100;
+              
+              return (
+                <View key={attr.key} className="gap-2">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-xl">{attr.icon}</Text>
+                      <Text className="text-sm font-semibold text-foreground">{attr.label}</Text>
+                    </View>
+                    <Text className="text-lg font-bold text-primary">
+                      {value}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row items-center gap-3">
+                    <Pressable
+                      onPress={() => handleDecrement(attr.key)}
+                      disabled={value === 0}
+                      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <View className={`w-10 h-10 rounded items-center justify-center ${
+                        value === 0 ? 'bg-border/50' : 'bg-error'
+                      }`}>
+                        <Text className={`font-bold text-lg ${
+                          value === 0 ? 'text-muted' : 'text-background'
+                        }`}>−</Text>
+                      </View>
+                    </Pressable>
+
+                    <View className="flex-1">
+                      <Slider
+                        value={value}
+                        onValueChange={(val: number) => handleSliderChange(attr.key, val)}
+                        minimumValue={0}
+                        maximumValue={MAX_PER_ATTRIBUTE}
+                        step={1}
+                        minimumTrackTintColor={colors.primary}
+                        maximumTrackTintColor={colors.border}
+                        thumbTintColor={colors.primary}
+                      />
+                      {/* Progress bar visual */}
+                      <View className="h-1 bg-border rounded-full mt-1">
+                        <View 
+                          className="h-full bg-primary rounded-full"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </View>
+                    </View>
+
+                    <Pressable
+                      onPress={() => handleIncrement(attr.key)}
+                      disabled={value >= MAX_PER_ATTRIBUTE || remainingPoints === 0}
+                      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <View className={`w-10 h-10 rounded items-center justify-center ${
+                        value >= MAX_PER_ATTRIBUTE || remainingPoints === 0 ? 'bg-border/50' : 'bg-success'
+                      }`}>
+                        <Text className={`font-bold text-lg ${
+                          value >= MAX_PER_ATTRIBUTE || remainingPoints === 0 ? 'text-muted' : 'text-background'
+                        }`}>+</Text>
+                      </View>
+                    </Pressable>
+                  </View>
+
+                  <View className="flex-row justify-between">
+                    <Text className="text-xs text-muted">Min: 0</Text>
+                    <Text className="text-xs text-muted">Max: {MAX_PER_ATTRIBUTE}</Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
 
           {/* Create Button */}
           <Pressable
             onPress={create}
-            disabled={!form.firstName || !form.lastName || loading}
+            disabled={!form.firstName || !form.lastName || usedPoints !== MAX_POINTS || loading}
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.9 : 1,
@@ -227,12 +337,14 @@ export default function CreateFighterScreen() {
             ]}
           >
             <View className={`rounded-lg py-4 items-center ${
-              !form.firstName || !form.lastName || loading
+              !form.firstName || !form.lastName || usedPoints !== MAX_POINTS || loading
                 ? 'bg-border'
                 : 'bg-primary'
             }`}>
               <Text className="text-background font-bold text-base">
-                {loading ? 'Creating...' : 'Create Fighter'}
+                {loading ? 'Creating...' : 
+                 usedPoints !== MAX_POINTS ? `Allocate ${remainingPoints} more points` :
+                 'Create Fighter'}
               </Text>
             </View>
           </Pressable>
