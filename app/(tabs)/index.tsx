@@ -1,45 +1,197 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { ScrollView, Text, View, Pressable, FlatList, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { useColors } from "@/hooks/use-colors";
 
-/**
- * Home Screen - NativeWind Example
- *
- * This template uses NativeWind (Tailwind CSS for React Native).
- * You can use familiar Tailwind classes directly in className props.
- *
- * Key patterns:
- * - Use `className` instead of `style` for most styling
- * - Theme colors: use tokens directly (bg-background, text-foreground, bg-primary, etc.); no dark: prefix needed
- * - Responsive: standard Tailwind breakpoints work on web
- * - Custom colors defined in tailwind.config.js
- */
+// Mock data for development
+const mockFighters = [
+  {
+    id: "1",
+    first_name: "John",
+    last_name: "Smith",
+    nickname: "The Hammer",
+    weight_class: "welterweight",
+    style_icon: "🏟️",
+    wins: 12,
+    losses: 3,
+    draws: 0,
+    money: 125000,
+    training_points: 8,
+  },
+  {
+    id: "2",
+    first_name: "Maria",
+    last_name: "Garcia",
+    nickname: "La Reina",
+    weight_class: "middleweight",
+    style_icon: "🥊",
+    wins: 8,
+    losses: 2,
+    draws: 1,
+    money: 85000,
+    training_points: 5,
+  },
+];
+
 export default function HomeScreen() {
+  const router = useRouter();
+  const colors = useColors();
+  const [fighters] = useState(mockFighters);
+
+  const handleCreateFighter = () => {
+    // Navigate to create fighter screen
+    alert("Create Fighter feature coming soon!");
+  };
+
+  const handleViewFighter = (fighterId: string) => {
+    // Navigate to fighter detail screen
+    alert(`View Fighter ${fighterId} - Feature coming soon!`);
+  };
+
+  const handleViewChallenges = () => {
+    // Switch to challenges tab
+    router.push("../challenges");
+  };
+
+  const handleViewRankings = () => {
+    // Switch to rankings tab
+    router.push("../rankings");
+  };
+
+  const renderFighterCard = ({ item }: any) => (
+    <Pressable
+      onPress={() => handleViewFighter(item.id)}
+      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+    >
+      <View className="bg-surface rounded-lg p-4 mb-3 border border-border">
+        <View className="flex-row justify-between items-start mb-2">
+          <View className="flex-1">
+            <Text className="text-lg font-bold text-foreground">
+              {item.style_icon} {item.first_name} {item.last_name}
+            </Text>
+            {item.nickname && (
+              <Text className="text-sm text-muted italic">\"{ item.nickname }\"</Text>
+            )}
+          </View>
+          <Text className="text-xs bg-primary px-2 py-1 rounded text-background font-semibold">
+            {item.weight_class}
+          </Text>
+        </View>
+        <View className="flex-row justify-between mb-2">
+          <Text className="text-sm text-muted">
+            Record: {item.wins}W - {item.losses}L - {item.draws}D
+          </Text>
+        </View>
+        <View className="flex-row justify-between">
+          <Text className="text-xs text-success font-semibold">
+            💰 ${item.money.toLocaleString()}
+          </Text>
+          <Text className="text-xs text-warning font-semibold">
+            ⚡ {item.training_points} pts
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+
   return (
-    <ScreenContainer className="p-6">
+    <ScreenContainer className="p-4">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-8">
-          {/* Hero Section */}
-          <View className="items-center gap-2">
-            <Text className="text-4xl font-bold text-foreground">Welcome</Text>
-            <Text className="text-base text-muted text-center">
-              Edit app/(tabs)/index.tsx to get started
+        <View className="gap-6">
+          {/* Header */}
+          <View className="gap-2">
+            <Text className="text-3xl font-bold text-foreground">OFA</Text>
+            <Text className="text-sm text-muted">
+              Onchain Fighting Association
             </Text>
           </View>
 
-          {/* Example Card */}
-          <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
-            <Text className="text-lg font-semibold text-foreground mb-2">NativeWind Ready</Text>
-            <Text className="text-sm text-muted leading-relaxed">
-              Use Tailwind CSS classes directly in your React Native components.
+          {/* Quick Stats */}
+          <View className="bg-surface rounded-lg p-4 border border-border gap-2">
+            <Text className="text-sm font-semibold text-muted uppercase">
+              Your Stats
             </Text>
+            <View className="flex-row justify-between">
+              <View>
+                <Text className="text-2xl font-bold text-primary">
+                  {fighters.reduce((sum, f) => sum + f.wins, 0)}
+                </Text>
+                <Text className="text-xs text-muted">Total Wins</Text>
+              </View>
+              <View>
+                <Text className="text-2xl font-bold text-error">
+                  {fighters.reduce((sum, f) => sum + f.losses, 0)}
+                </Text>
+                <Text className="text-xs text-muted">Total Losses</Text>
+              </View>
+              <View>
+                <Text className="text-2xl font-bold text-success">
+                  ${(fighters.reduce((sum, f) => sum + f.money, 0) / 1000).toFixed(0)}k
+                </Text>
+                <Text className="text-xs text-muted">Total Money</Text>
+              </View>
+            </View>
           </View>
 
-          {/* Example Button */}
-          <View className="items-center">
-            <TouchableOpacity className="bg-primary px-6 py-3 rounded-full active:opacity-80">
-              <Text className="text-background font-semibold">Get Started</Text>
-            </TouchableOpacity>
+          {/* Action Buttons */}
+          <View className="gap-2">
+            <Pressable
+              onPress={handleCreateFighter}
+              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+            >
+              <View className="bg-primary rounded-lg py-3 px-4 items-center">
+                <Text className="text-background font-bold text-base">
+                  ➕ Create Fighter
+                </Text>
+              </View>
+            </Pressable>
+
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={handleViewChallenges}
+                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+              >
+                <View className="bg-surface rounded-lg py-3 px-4 items-center border border-border">
+                  <Text className="text-foreground font-semibold text-sm">
+                    ⚔️ Challenges
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={handleViewRankings}
+                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+              >
+                <View className="bg-surface rounded-lg py-3 px-4 items-center border border-border">
+                  <Text className="text-foreground font-semibold text-sm">
+                    🏆 Rankings
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Fighters List */}
+          <View>
+            <Text className="text-lg font-bold text-foreground mb-3">
+              Your Fighters
+            </Text>
+            {fighters.length > 0 ? (
+              <FlatList
+                data={fighters}
+                renderItem={renderFighterCard}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+              />
+            ) : (
+              <View className="bg-surface rounded-lg p-6 items-center border border-border">
+                <Text className="text-muted text-center">
+                  No fighters yet. Create your first fighter to get started!
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>

@@ -12,12 +12,14 @@ const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
   // App branding - update these values directly (do not use env vars)
-  appName: "OFA - Onchain Fighting Association",
+  appName: "OFA",
   appSlug: "ofa-mobile",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "",
+  logoUrl: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663208137740/ToIUCovtHVlBkuTk.png",
   scheme: schemeFromBundleId,
+  // OFA MMA League Simulator with Supabase backend
+  description: "Multiplayer MMA league simulator",
   iosBundleId: bundleId,
   androidPackage: bundleId,
 };
@@ -26,10 +28,12 @@ const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
   version: "1.0.0",
+  description: "OFA - Onchain Fighting Association",
   orientation: "portrait",
+  primaryColor: "#DC2626",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
-  userInterfaceStyle: "automatic",
+  userInterfaceStyle: "dark",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
@@ -37,7 +41,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#DC2626",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -64,6 +68,7 @@ const config: ExpoConfig = {
     bundler: "metro",
     output: "static",
     favicon: "./assets/images/favicon.png",
+    backgroundColor: "#0F172A",
   },
   plugins: [
     "expo-router",
@@ -82,15 +87,15 @@ const config: ExpoConfig = {
     ],
     [
       "expo-splash-screen",
-      {
-        image: "./assets/images/splash-icon.png",
-        imageWidth: 200,
-        resizeMode: "contain",
-        backgroundColor: "#ffffff",
-        dark: {
-          backgroundColor: "#000000",
-        },
+    {
+      image: "./assets/images/splash-icon.png",
+      imageWidth: 200,
+      resizeMode: "contain",
+      backgroundColor: "#DC2626",
+      dark: {
+        backgroundColor: "#DC2626",
       },
+    },
     ],
     [
       "expo-build-properties",
@@ -104,6 +109,11 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    eas: {
+      projectId: "ofa-mobile",
+    },
   },
 };
 
