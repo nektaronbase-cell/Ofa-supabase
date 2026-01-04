@@ -156,3 +156,14 @@
 - [x] Add settings tab to navigation
 - [x] Handle logout and redirect to sign-in
 - [x] Test logout functionality
+
+
+## Fighter Detail Screen
+- [x] Create fighter detail screen layout
+- [x] Display fighter profile (name, nickname, record, weight class)
+- [x] Add visual attribute bars showing all 5 attributes
+- [x] Display earnings and training points
+- [x] Add fight history section with detailed records
+- [x] Show injury status and recovery time
+- [x] Add navigation from home screen fighter cards
+- [x] Test fighter detail screen functionality

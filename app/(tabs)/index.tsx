@@ -63,11 +63,7 @@ export default function HomeScreen() {
   };
 
   const handleViewFighter = (fighterId: string) => {
-    if (!user) {
-      Alert.alert("Sign In Required", "Please sign in to view fighter details");
-      return;
-    }
-    router.push(`/training?id=${fighterId}`);
+    router.push(`/fighter-detail?id=${fighterId}` as any);
   };
 
   const handleViewChallenges = () => {
